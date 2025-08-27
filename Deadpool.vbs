@@ -56,7 +56,7 @@ Const MaxPlayers = 4          ' from 1 to 4
 Const BallSaverTime = 20      ' in seconds of the first ball
 Const MaxMultiplier = 5       ' limit playfield multiplier
 Const MaxBonusMultiplier = 50 'limit Bonus multiplier
-Const BallsPerGame = 5        ' usually 3 or 5
+Const BallsPerGame = 3        ' usually 3 or 5
 Const MaxMultiballs = 6       ' max number of balls during multiballs
 
 ' Use FlexDMD if in FS mode
@@ -3258,10 +3258,14 @@ Sub ResetNewBallVariables() 'reset variables for a new ball or player
     ResetDropTargets
     LilDPHits = 0
     CloseGates
+
     'reset playfield multipiplier
     SetPlayfieldMultiplier 1
+
+    'Battle is ready after every new ball
+    bBattleReady = True
+
     If Balls = 1 then 'only on the first ball
-        bBattleReady = True
         bLockEnabled = True:SwordEffect 1
     End If
     'update dead, pool, boom & other lights
@@ -3942,7 +3946,8 @@ Sub Trigger010_Hit 'left loop
             Case 0
                 DazzlePower(CurrentPlayer) = DazzlePower(CurrentPlayer) + 1
                 CheckDazzler
-            Case 1, 4, 6, 7
+            'Sabretooth takes damage from the loops
+            Case 1, 3, 4, 6, 7
                 If BattleLights(1) = 2 Then PlaySound "sfx_hit2":CheckBattle
             Case 5
                 If BattleLights(1) = 2 Then
@@ -4008,7 +4013,8 @@ Sub Trigger005_Hit 'right loop
                 DominoPower(CurrentPlayer) = DominoPower(CurrentPlayer) + 1
                 CheckDomino
             End If
-        Case 1, 4, 6, 7
+        'Sabretooth takes damage from the loops
+        Case 1, 3, 4, 6, 7
             If BattleLights(6) = 2 Then PlaySound "sfx_hit3":CheckBattle
         Case 5
             If BattleLights(6) = 2 Then
@@ -4470,6 +4476,8 @@ Sub Target009_Dropped 'lil drop 1
     setlightcolor li044a, blue, 2
     If bLilDPMB then
         DropDownTargets
+        'Give a 10 second ball save when lildpmb is activated and the ball is dropped
+        EnableBallSaver 10
         setlightcolor li044, red, 2
         setlightcolor li044a, red, 2
     End If
@@ -4492,6 +4500,8 @@ Sub Target010_Dropped 'lil drop 2
     setlightcolor li044a, blue, 2
     If bLilDPMB then
         DropDownTargets
+        'Give a 10 second ball save when lildpmb is activated and the ball is dropped
+        EnableBallSaver 10
         setlightcolor li044, red, 2
         setlightcolor li044a, red, 2
     End If
@@ -4511,6 +4521,8 @@ Sub Target011_Dropped 'lil drop 3
     setlightcolor li044a, blue, 2
     If bLilDPMB then
         DropDownTargets
+        'Give a 10 second ball save when lildpmb is activated and the ball is dropped  
+        EnableBallSaver 10
         setlightcolor li044, red, 2
         setlightcolor li044a, red, 2
     End If
@@ -4600,6 +4612,8 @@ Sub LilDPCheckHits
             DMD "       LIL DEADPOOL ", "         MULTIBALL  ", "d_lildpmb", eNone, eNone, eNone, 1500, True, "vo_lildp_multiball2"
             ResetDroptargets
             AddMultiball 1
+            'Enable ball save on multiball
+            EnableBallSaver BallSaverTime
             bLilDPMB = True:ChangeSong
             LilDPJackpot(CurrentPlayer) = 500000 * LilDPHitsNeeded(CurrentPlayer)
             LilDPHitsNeeded(CurrentPlayer) = LilDPHitsNeeded(CurrentPlayer) + 1
@@ -4764,8 +4778,10 @@ End Sub
 
 Sub OpenGates
     PlaySoundAt "fx_SolenoidOn", gate3
-    gate3.open = True
-    gate4.open = True
+    'The orbits go way too fast and lead to an instant drain
+    'so i leaved these closed
+    'gate3.open = True
+    'gate4.open = True
 End Sub
 
 Sub CloseGates
@@ -4882,6 +4898,7 @@ Sub CheckDisco
             StartDisco
             StartSpots
             bDiscoMBEnabled = True
+            EnableBallSaver BallSaverTime
             ChangeSong
             li053.State = 2
             SetlightColor li057, red, 2
@@ -5151,7 +5168,8 @@ Sub LightSeqDPtargets_PlayDone()
 End Sub
 
 Sub CheckBattle 'called after each target or lane hit to change lights and check for the end of the battle
-    DMD "", "", "d_bam", eNone, eNone, eBlink, 1000, True, "sfx19"
+    'I didn't like this display.  I would rather see the health bar of the villain i'm fighting
+    'DMD "", "", "d_bam", eNone, eNone, eBlink, 1000, True, "sfx19"
     Select Case Battle(CurrentPlayer, 0)
         Case 1                                      'Juggernaut
             LifeLeft(CurrentPlayer, 1) = LifeLeft(CurrentPlayer, 1) - AttackPower * WolverineValue
@@ -5181,7 +5199,8 @@ Sub CheckBattle 'called after each target or lane hit to change lights and check
                 BattleLights(2) = 2:li071.State = 0:BattleLights(5) = 2
             End If
         Case 3                                      'Sabretooth
-            LifeLeft(CurrentPlayer, 3) = LifeLeft(CurrentPlayer, 3) -(AttackPower / 4) * WolverineValue
+            'It was way too hard to kill sabretooth
+            LifeLeft(CurrentPlayer, 3) = LifeLeft(CurrentPlayer, 3) - (AttackPower / 2) * WolverineValue
             If LifeLeft(CurrentPlayer, 3) <= 0 Then 'life is empty, then enabled the kicker to finish the battle
                 TurnOffArrows
                 SetLightColor li056, red, 2
@@ -5651,6 +5670,8 @@ Sub Lock_Hit
                 bLockEnabled = False
                 SwordEffect 0
                 bNinjaMB = True
+                'Enable ball save on multiball
+                EnableBallSaver BallSaverTime
                 ChangeSong
                 NinjaMBJackpot(CurrentPlayer) = 500000 + 50000 * NinjaStars(CurrentPLayer)
                 'Turn On the Ninja Jacpot Arrows in a teal color
