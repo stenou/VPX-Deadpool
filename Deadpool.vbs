@@ -3017,7 +3017,7 @@ Sub Game_Init()     'called at the start of a new game
         bFirstBattle(i) = True
         BattlesWon(i) = 0
         MegaJackpot(i) = 50000
-        LilDPHitsNeeded(i) = 1
+        LilDPHitsNeeded(i) = 2
         LilDPJackpot(i) = 500000
         LeftSpinnerCount(i) = 0
         DiscoLoopsValue(i) = 350000
@@ -3148,10 +3148,12 @@ Sub ResetNewBallVariables() 'reset variables for a new ball or player
     ResetDropTargets
     LilDPHits = 0
     CloseGates
+    'Battle is ready after every new ball
+    bBattleReady = True
+    
     'reset playfield multipiplier
     SetPlayfieldMultiplier 1
     If Balls = 1 then 'only on the first ball
-        bBattleReady = True
         bLockEnabled = True:SwordEffect 1
     End If
     'update dead, pool, boom & other lights
@@ -3832,7 +3834,7 @@ Sub Trigger010_Hit 'left loop
             Case 0
                 DazzlePower(CurrentPlayer) = DazzlePower(CurrentPlayer) + 1
                 CheckDazzler
-            Case 1, 4, 6, 7
+            Case 1, 3, 4, 6, 7
                 If BattleLights(1) = 2 Then PlaySound "sfx_hit2":CheckBattle
             Case 5
                 If BattleLights(1) = 2 Then
@@ -3898,7 +3900,7 @@ Sub Trigger005_Hit 'right loop
                 DominoPower(CurrentPlayer) = DominoPower(CurrentPlayer) + 1
                 CheckDomino
             End If
-        Case 1, 4, 6, 7
+        Case 1, 3, 4, 6, 7
             If BattleLights(6) = 2 Then PlaySound "sfx_hit3":CheckBattle
         Case 5
             If BattleLights(6) = 2 Then
@@ -4030,7 +4032,7 @@ Sub Trigger014_Hit 'wolverine loop
         Case 0
             WolverinePower(CurrentPlayer) = WolverinePower(CurrentPlayer) + 1
             CheckWolverine
-        Case 2, 4, 6, 7
+        Case 1, 2, 4, 6, 7
             If BattleLights(4) = 2 Then PlaySound "sfx_hit1":CheckBattle
         Case 5
             If BattleLights(4) = 2 Then
@@ -4210,8 +4212,8 @@ Sub CheckDead
         bBattleready = True
         'reset targets
         For i = 1 to 4:Dead(CurrentPLayer, i) = 0:Next
-        ' count how many times Pool targets has been all hit
-        Pool(CurrentPLayer, 0) = Pool(CurrentPLayer, 0) + 1
+        ' count how many times Dead targets has been all hit
+        Dead(CurrentPLayer, 0) = Dead(CurrentPLayer, 0) + 1
         CheckDeadPool
     End If
 End Sub
@@ -4325,8 +4327,8 @@ Sub CheckPool
 End Sub
 
 Sub CheckDeadPool 'all targets has been hit
-    IF Dead(CurrentPlayer, 0) = 1 OR Pool(CurrentPLayer, 0) = 1 AND bInfoNeeded4(CurrentPLayer) Then bInfoNeeded4(CurrentPLayer) = False:vpmtimer.addtimer 3000, "PlaySound ""vo_completedptargets-mystery"" '"
-    IF Dead(CurrentPlayer, 0) = 2 OR Pool(CurrentPLayer, 0) = 2 AND bInfoNeeded5(CurrentPLayer) Then bInfoNeeded5(CurrentPLayer) = False:vpmtimer.addtimer 3000, "PlaySound ""vo_completedptargets-regenerate"" '"
+    IF (Dead(CurrentPlayer, 0) = 1 OR Pool(CurrentPLayer, 0) = 1) AND bInfoNeeded4(CurrentPLayer) Then bInfoNeeded4(CurrentPLayer) = False:vpmtimer.addtimer 3000, "PlaySound ""vo_completedptargets-mystery"" '"
+    IF (Dead(CurrentPlayer, 0) = 2 OR Pool(CurrentPLayer, 0) = 2) AND bInfoNeeded5(CurrentPLayer) Then bInfoNeeded5(CurrentPLayer) = False:vpmtimer.addtimer 3000, "PlaySound ""vo_completedptargets-regenerate"" '"
     IF Dead(CurrentPlayer, 0)> 2 AND Pool(CurrentPLayer, 0)> 2 Then
         'regeneration light
         DMD "_", "  REGENERATE IS LIT", "", eNone, eNone, eNone, 1500, True, "vo_regenerateislit"
@@ -4334,7 +4336,7 @@ Sub CheckDeadPool 'all targets has been hit
         ' and reset the counter
         Dead(CurrentPlayer, 0) = 0
         Pool(CurrentPlayer, 0) = 0
-    ElseIf Dead(CurrentPlayer, 0)> 1 AND Pool(CurrentPLayer, 0)> 1 Then
+    ElseIf Dead(CurrentPlayer, 0)> 0 AND Pool(CurrentPLayer, 0)> 0 Then
         'enable Mystery light
         DMD "_", "   MYSTERY IS LIT", "", eNone, eNone, eNone, 1500, True, "vo_mysteryislit"
         li037.State = 1
@@ -4360,6 +4362,8 @@ Sub Target009_Dropped 'lil drop 1
     setlightcolor li044a, blue, 2
     If bLilDPMB then
         DropDownTargets
+        'Give a 10 second ball save when lildpmb is activated and the ball is dropped
+        EnableBallSaver 10
         setlightcolor li044, red, 2
         setlightcolor li044a, red, 2
     End If
@@ -4382,6 +4386,8 @@ Sub Target010_Dropped 'lil drop 2
     setlightcolor li044a, blue, 2
     If bLilDPMB then
         DropDownTargets
+         'Give a 10 second ball save when lildpmb is activated and the ball is dropped
+        EnableBallSaver 10
         setlightcolor li044, red, 2
         setlightcolor li044a, red, 2
     End If
@@ -4401,6 +4407,8 @@ Sub Target011_Dropped 'lil drop 3
     setlightcolor li044a, blue, 2
     If bLilDPMB then
         DropDownTargets
+         'Give a 10 second ball save when lildpmb is activated and the ball is dropped
+        EnableBallSaver 10
         setlightcolor li044, red, 2
         setlightcolor li044a, red, 2
     End If
@@ -4490,6 +4498,8 @@ Sub LilDPCheckHits
             DMD "       LIL DEADPOOL ", "         MULTIBALL  ", "d_lildpmb", eNone, eNone, eNone, 1500, True, "vo_lildp_multiball2"
             ResetDroptargets
             AddMultiball 1
+            'Enable ball save on multiball
+            EnableBallSaver BallSaverTime
             bLilDPMB = True:ChangeSong
             LilDPJackpot(CurrentPlayer) = 500000 * LilDPHitsNeeded(CurrentPlayer)
             LilDPHitsNeeded(CurrentPlayer) = LilDPHitsNeeded(CurrentPlayer) + 1
@@ -4616,8 +4626,10 @@ Sub Spinner001_Spin 'dazzler
         Addscore 500000
     End If
     If bDiscoEnabled = False Then 'count the spins when not in Disco Mode
-        LeftSpinnerCount(CurrentPlayer) = LeftSpinnerCount(CurrentPlayer) + 1
-        CheckDisco
+        If Battle(CurrentPlayer, 0) = 0 Then 'Ignore when in a battle
+            LeftSpinnerCount(CurrentPlayer) = LeftSpinnerCount(CurrentPlayer) + 1
+            CheckDisco
+        End If
     End If
     If bDiscoMBEnabled Then 'increase the Disco Super Jackpot
         DiscoSuperJackpot(CurrentPlayer) = DiscoSuperJackpot(CurrentPlayer) + 100000
@@ -4940,9 +4952,9 @@ Sub StartBattle(n)
     Battle(CurrentPlayer, 0) = n
     Battle(CurrentPlayer, n) = 2 '0 battle not started, 1 battle finished, 2 battle started
     If bFirstBattle(CurrentPlayer) Then
-        AttackPower = 1
+        AttackPower = 2
     Else
-        AttackPower = 0.5 'the battles are now double as hard to complete
+        AttackPower = 1 'the battles are now double as hard to complete
     End If
     TurnOffArrows
     ChangeSong
@@ -5041,10 +5053,14 @@ Sub LightSeqDPtargets_PlayDone()
 End Sub
 
 Sub CheckBattle 'called after each target or lane hit to change lights and check for the end of the battle
-    DMD "", "", "d_bam", eNone, eNone, eBlink, 1000, True, "sfx19"
     Select Case Battle(CurrentPlayer, 0)
-        Case 1                                      'Juggernaut
+        Case 1        
+			'Juggernaut
+			If LifeLeft(CurrentPlayer, 1) > 6 Then
+				LifeLeft(CurrentPlayer, 1) = LifeLeft(CurrentPlayer, 1) - 1
+			Else
             LifeLeft(CurrentPlayer, 1) = LifeLeft(CurrentPlayer, 1) - AttackPower * WolverineValue
+			End If
             If LifeLeft(CurrentPlayer, 1) <= 0 Then 'life is empty, then enabled the kicker to finish the battle
                 TurnOffArrows
                 SetLightColor li056, red, 2
@@ -5541,6 +5557,8 @@ Sub Lock_Hit
                 bLockEnabled = False
                 SwordEffect 0
                 bNinjaMB = True
+                'Enable ball save on multiball
+                EnableBallSaver BallSaverTime
                 ChangeSong
                 NinjaMBJackpot(CurrentPlayer) = 500000 + 50000 * NinjaStars(CurrentPLayer)
                 'Turn On the Ninja Jacpot Arrows in a teal color
